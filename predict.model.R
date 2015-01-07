@@ -36,7 +36,7 @@ count.model.gbm <- function(predictors, count, ntree, inter = 3, shrink  = 0.01)
 count.predict <- function(model, predictors) {
 	cas.test <- predict(model$cas, predictors)
 	reg.test <- predict(model$reg, predictors)
-	round(exp(cas.test) - 1 + exp(reg.test) - 1)
+	round(10^(cas.test) + 10^(reg.test) - 2)
 }
 
 #write results to csv file, as required by kaggle
