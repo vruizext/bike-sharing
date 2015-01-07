@@ -6,31 +6,37 @@ registerDoMC(cores = 2)
 
 
 #train model using all available data and generate count predictions
-count.model <- function(predictors, counts, ntree,
-						mtry.min, mtry.max = length(predictors), seed = 12345) {
-	model = list()
-	ctrl <- trainControl(method = "oob", allowParallel = TRUE )
-	#ctrl <- trainControl(method = "cv", number = 5, allowParallel = TRUE )
+count.model.rf <- function(predictors, count, ntree, mtry, nsize = 5, seed = 12345) {
+	ctrl <- trainControl(method = "oob", allowParallel = TRUE)
+	grid <- expand.grid(.mtry = mtry) #, .ntree = ntree
 	set.seed(seed)
-	model$cas <- train(predictors, counts$casual, method = "rf", trControl = ctrl,
-					   varImp = TRUE, importance = TRUE,  ntree = ntree, prox = TRUE,
-					   tuneGrid = expand.grid(.mtry = mtry.min:mtry.max))
-	set.seed(seed)
-	model$reg <- train(predictors, counts$registered, method = "rf", trControl = ctrl,
-					   varImp = TRUE, importance = TRUE,  ntree = ntree, prox = TRUE,
-					   tuneGrid = expand.grid(.mtry = mtry.min:mtry.max))
-# 	set.seed(12345)
-# 	model$tot <- train(predictors, counts$count, method = "rf", trControl = ctrl,
-# 					   importance = TRUE,  ntree = ntree, prox = TRUE,
-# 					   tuneGrid = data.frame(.mtry = mtry))
+	model <- train(predictors, count, method = "rf",
+				   	trControl = ctrl, tuneGrid = grid,
+					varImp = TRUE, importance = TRUE, prox = TRUE,
+					ntree = ntree,  nodesize = nsize) #ntree = ntree,
 	model
+}
+
+count.model.gbm <- function(predictors, count, ntree, inter = 3, shrink  = 0.01) {
+	ctrl = trainControl(method = "repeatedcv", number = 10, repeats = 3,
+							allowParallel = TRUE, verbose = F)
+
+	grid = expand.grid(.interaction.depth = inter, .n.trees = ntree, .shrinkage = shrink)
+	set.seed(12345)
+	model = train(predictors, count, method='gbm',
+				  metric   = "RMSE",
+				  tuneGrid = grid,
+				  trControl = ctrl,
+				  distribution = "gaussian",
+				  n.minobsinnode = 5,
+				  verbose = FALSE)
 }
 
 #return predictions for the given predictors values
 count.predict <- function(model, predictors) {
 	cas.test <- predict(model$cas, predictors)
 	reg.test <- predict(model$reg, predictors)
-	floor(cas.test + reg.test)
+	round(exp(cas.test) - 1 + exp(reg.test) - 1)
 }
 
 #write results to csv file, as required by kaggle
@@ -38,4 +44,17 @@ predictions.write <- function(hours, predictions, file = "test-results.csv") {
 	test.result <- data.frame(datetime=hours, count=predictions, row.names=NULL)
 	write.csv(file, x=test.result, row.names = F, quote = F)
 }
+
+
+rmsle <- function(pv, av) {
+	(sum((log(av + 1) - log(pv + 1))^2) / length(pv))^0.5
+}
+
+RMSLE <- function(data, lev = NULL, model = NULL,...) {
+	if (!all(levels(data[, "pred"]) == levels(data[, "obs"])))
+		stop("levels of observed and predicted data do not match")
+	rmsle(data$pred, data$obs)
+}
+
+
 
