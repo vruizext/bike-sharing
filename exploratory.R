@@ -13,13 +13,22 @@ qplot(hour, count, colour = season, data = train)
 qplot(hour, count, colour = weekday, data = train)
 
 qplot(hour, casual, data = train, facets=.~workingday)
+qplot(hour.c, casual, data = train, facets=.~workingday)
 qplot(hour, casual, data = train, facets=.~weekday)
 qplot(hour, casual, data = train, facets=.~month)
-qplot(hour, registered, data = train, facets=.~workingday)
-qplot(hour, registered, data = train, facets=.~weekday)
-qplot(hour, registered, data = train, facets=.~month)
+qplot(hour, casual, data = train, facets=.~holiday)
+qplot(hour, casual, data = train, facets=.~holiday+workingday)
 
-qplot(atemp, count, colour = weather, data = train)
+qplot(hour, registered, data = train, facets=.~workingday)
+qplot(hour.c, registered, data = train, facets=.~workingday)
+qplot(hour, registered, data = train, facets=.~weekday+holiday)
+qplot(hour, registered, data = train, facets=.~month)
+qplot(hour, registered, data = train, facets=.~holiday)
+
+qplot(hour, registered, data = train, facets=.~holiday+workingday)
+
+qplot(atemp, casual, colour = weather, data = train, facets=.~season)
+qplot(atemp, registered, colour = weather, data = train, facets=.~season)
 
 qplot(atemp, count, colour = season, data = train)
 
